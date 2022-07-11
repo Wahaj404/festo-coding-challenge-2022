@@ -41,9 +41,31 @@ def puzzle2(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if p.home_planet in outliers}
 
 
+def puzzle3(persons: list[Person]) -> set[str]:
+    visited = defaultdict(list)
+    with open("security_log.txt", "r") as f:
+        for line in f:
+            if line.startswith("Place:"):
+                place = line.split(":")[1].strip()
+            elif line.startswith("in"):
+                for person in line.split(":")[1].strip().split(","):
+                    visited[person.strip()].append((time, place))
+            elif not line.startswith("out") and ":" in line:
+                time = tuple(map(int, line.split(":")))
+
+    seq = ["Junkyard", "Pod Racing Track", "Pod Racing Track", "Palace", "Factory"]
+
+    def match(places: list[tuple[int, int], str]) -> bool:
+        return len(places) == len(seq) and all(i[1] == j for i, j in zip(places, seq))
+
+    return {p.id for p in persons if match(sorted(visited[p.name]))}
+
+
 if __name__ == "__main__":
     persons = read_persons("population.txt")
     p1 = puzzle1(persons)
     print(f"p1: {sum(map(int, p1))}")
     p2 = puzzle2(persons)
     print(f"p2: {sum(map(int, p2))}")
+    p3 = puzzle3(persons)
+    print(f"p3: {sum(map(int, p3))}")
