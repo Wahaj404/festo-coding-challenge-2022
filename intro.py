@@ -28,9 +28,15 @@ def puzzle2(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if p.access_key & 8 == 8}
 
 
+def puzzle3(persons: list[Person]) -> set[str]:
+    return {p.id for p in persons if p.hour < 7 or (p.hour == 7 and p.minute < 14)}
+
+
 if __name__ == "__main__":
     persons = read_persons()
     p1 = puzzle1(persons)
     print(f"p1: {sum(map(int, p1))}")
     p2 = puzzle2(persons)
     print(f"p2: {sum(map(int, p2))}")
+    p3 = puzzle3(persons)
+    print(f"p3: {sum(map(int, p3))}")
