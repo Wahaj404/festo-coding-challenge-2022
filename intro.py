@@ -1,11 +1,5 @@
 class Person:
-    name: str
-    id: str
-    access_key: int
-    hour: int
-    minute: int
-
-    def __init__(self, line):
+    def __init__(self, line: str):
         parts = line.split(",")
         self.name = parts[0].strip()
         self.id = parts[1].strip()
@@ -15,8 +9,8 @@ class Person:
         self.minute = int(login_time[1])
 
 
-def read_persons() -> list[Person]:
-    with open("office_database.txt", "r") as f:
+def read_persons(fname: str) -> list[Person]:
+    with open(fname, "r") as f:
         return [Person(line) for line in f]
 
 
@@ -33,7 +27,7 @@ def puzzle3(persons: list[Person]) -> set[str]:
 
 
 if __name__ == "__main__":
-    persons = read_persons()
+    persons = read_persons("office_database.txt")
     p1 = puzzle1(persons)
     print(f"p1: {sum(map(int, p1))}")
     p2 = puzzle2(persons)
