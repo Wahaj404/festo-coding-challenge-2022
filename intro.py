@@ -24,7 +24,13 @@ def puzzle1(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if "814" in p.id}
 
 
+def puzzle2(persons: list[Person]) -> set[str]:
+    return {p.id for p in persons if p.access_key & 8 == 8}
+
+
 if __name__ == "__main__":
     persons = read_persons()
     p1 = puzzle1(persons)
     print(f"p1: {sum(map(int, p1))}")
+    p2 = puzzle2(persons)
+    print(f"p2: {sum(map(int, p2))}")
