@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import chain
 from skspatial.objects import Plane, Points
 
 
@@ -10,9 +11,9 @@ class Person:
         self.blood_sample = [line.strip()[1:-1] for line in lines[5:11]]
 
     def has_pico(self) -> bool:
-        transpose = ["".join(s) for s in zip(*self.blood_sample)]
-        return any("pico" in r or "ocip" in r for r in self.blood_sample) or any(
-            "pico" in r or "ocip" in r for r in transpose
+        transpose = ("".join(s) for s in zip(*self.blood_sample))
+        return any(
+            "pico" in r or "ocip" in r for r in chain(self.blood_sample, transpose)
         )
 
 
@@ -22,10 +23,10 @@ def read_persons(fname: str) -> list[Person]:
     return [Person(lines[i : i + 14]) for i in range(0, len(lines), 14)]
 
 
-def read_galaxy(fname: str) -> list:
+def read_galaxy(fname: str) -> dict[str, list[int]]:
     with open(fname, "r") as f:
         return {
-            line[0].strip(): list(map(int, line[1].strip()[1:-1].split(",")))
+            line[0].strip(): list(int(x) for x in line[1].strip()[1:-1].split(","))
             for line in map(lambda line: line.split(":"), f)
         }
 
