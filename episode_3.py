@@ -162,3 +162,5 @@ if __name__ == "__main__":
     print(f"p2: {sum(map(int, p2))}")
     p3 = puzzle3(persons)
     print(f"p3: {sum(map(int, p3))}")
+    culprit_id = (p1 & p2).pop()
+    print(f"culprit name: {[p.name for p in persons if p.id == culprit_id][0]}")
