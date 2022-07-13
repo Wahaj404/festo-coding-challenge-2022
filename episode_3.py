@@ -73,7 +73,7 @@ def dist(c1: tuple[float, float, float], c2: tuple[float, float, float]) -> floa
 
 def puzzle1(persons: list[Person]) -> set[str]:
     seqs = ["pic", "opi", "cop", "ico"]
-    return sorted({p.id for p in persons if p.has_pico(seqs)})
+    return {p.id for p in persons if p.has_pico(seqs)}
 
 
 def puzzle2(persons: list[Person]) -> set[str]:
@@ -100,9 +100,65 @@ def puzzle2(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if p.home_planet in running_set}
 
 
+def puzzle3(persons: list[Person]) -> set[str]:
+    travel_times = {
+        "Bio-Lab": 21,
+        "Factory": 18,
+        "Shopping Mall": 17,
+        "Food Plant": 20,
+        "Office Station": 20,
+        "Gym": 7,
+        "Starship Garage": 16,
+        "Happy-Center": 27,
+        "Palace": 37,
+        "Junkyard": 16,
+        "Pod Racing Track": 19,
+        "Mining Outpost": 15,
+        "placeholder": float("inf"),
+    }
+
+    absolute_time = lambda h, m: h * 60 + m
+
+    visited = defaultdict(lambda: [["placeholder", float("inf"), None]])
+    with open("security_log.txt", "r") as f:
+        for line in f:
+            if line.startswith("Place:"):
+                place = line.split(":")[1].strip()
+            elif line.startswith("in"):
+                for person in line.split(":")[1].strip().split(","):
+                    visited[person.strip()].append([place, time])
+            elif line.startswith("out") and ":" in line:
+                for person in line.split(":")[1].strip().split(","):
+                    visited[person.strip()][-1].append(time)
+            elif ":" in line:
+                time = absolute_time(*map(int, line.split(":")))
+    for log in visited.values():
+        log.sort(key=lambda x: x[1])
+
+    window = (absolute_time(11, 0), absolute_time(13, 0))
+    crime_time = 20
+
+    def could_rob(src, enter, dest, leave) -> bool:
+        arrival = max(enter + travel_times[src], window[0])
+        departure = arrival + crime_time
+        return departure <= window[1] and departure + travel_times[dest] <= leave
+
+    names = {
+        person
+        for person, log in visited.items()
+        if any(
+            could_rob(src, enter, dest, leave)
+            for (src, _, enter), (dest, leave, _) in zip(log, log[1:])
+        )
+    }
+    return {p.id for p in persons if p.name in names}
+
+
 if __name__ == "__main__":
     persons = read_persons("population.txt")
     p1 = puzzle1(persons)
     print(f"p1: {sum(map(int, p1))}")
     p2 = puzzle2(persons)
     print(f"p2: {sum(map(int, p2))}")
+    p3 = puzzle3(persons)
+    print(f"p3: {sum(map(int, p3))}")
