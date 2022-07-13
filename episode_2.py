@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class Person:
     def __init__(self, lines: list[str]):
         self.name = lines[0].split(":")[1].strip()
@@ -30,11 +33,55 @@ def read_persons(fname: str) -> list[Person]:
     return [Person(lines[i : i + 14]) for i in range(0, len(lines), 14)]
 
 
+def read_galaxy(fname: str) -> dict[str, list[int]]:
+    with open(fname, "r") as f:
+        return {
+            line[0].strip(): list(int(x) for x in line[1].strip()[1:-1].split(","))
+            for line in map(lambda line: line.split(":"), f)
+        }
+
+
+def read_trade_routes(fname: str) -> set[str]:
+    with open(fname, "r") as f:
+        return {
+            tuple(planet.strip() for planet in line.split(":")[0].split("-"))
+            for line in f
+            if "Ok" in line
+        }
+
+
+def lineseg_dist(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
+    d = np.divide(b - a, np.linalg.norm(b - a))
+    return np.hypot(
+        np.maximum.reduce([np.dot(a - p, d), np.dot(p - b, d), 0]),
+        np.linalg.norm(np.cross(p - a, d)),
+    )
+
+
 def puzzle1(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if p.has_pico()}
+
+
+def puzzle2(persons: list[Person]) -> set[str]:
+    trade_routes = read_trade_routes("trade_routes.txt")
+    galaxy = read_galaxy("galaxy_map.txt")
+    close_planets = {
+        planet
+        for planet, coords in galaxy.items()
+        if all(
+            lineseg_dist(
+                np.asarray(coords), np.asarray(galaxy[a]), np.asarray(galaxy[b])
+            )
+            <= 10
+            for a, b, in trade_routes
+        )
+    }
+    return {p.id for p in persons if p.home_planet in close_planets}
 
 
 if __name__ == "__main__":
     persons = read_persons("population.txt")
     p1 = puzzle1(persons)
     print(f"p1: {sum(map(int, p1))}")
+    p2 = puzzle2(persons)
+    print(f"p2: {sum(map(int, p2))}")
