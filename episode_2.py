@@ -1,3 +1,4 @@
+from collections import defaultdict
 import numpy as np
 
 
@@ -79,9 +80,44 @@ def puzzle2(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if p.home_planet in close_planets}
 
 
+def puzzle3(persons: list[Person]) -> set[str]:
+    visited = defaultdict(list)
+    with open("security_log.txt", "r") as f:
+        for line in f:
+            if line.startswith("Place:"):
+                place = line.split(":")[1].strip()
+            elif line.startswith("in"):
+                for person in line.split(":")[1].strip().split(","):
+                    visited[person.strip()].append(time)
+            elif line.startswith("out") and ":" in line:
+                for person in line.split(":")[1].strip().split(","):
+                    visited[person.strip()].append(time)
+            elif ":" in line:
+                time = tuple(map(int, line.split(":")))
+
+    absolute_time = lambda h, m: h * 60 + m
+
+    diffs = {
+        person: [
+            absolute_time(*b) - absolute_time(*a)
+            for a, b in zip(times[0::2], times[1::2])
+        ]
+        for person, times in visited.items()
+    }
+
+    def sums_to(nums: list[int], target: int, i: int = 0):
+        if i == len(nums) or target <= 0:
+            return target == 0
+        return sums_to(nums, target - nums[i], i + 1) or sums_to(nums, target, i + 1)
+
+    return {p.id for p in persons if sums_to(diffs[p.name], 79)}
+
+
 if __name__ == "__main__":
     persons = read_persons("population.txt")
     p1 = puzzle1(persons)
     print(f"p1: {sum(map(int, p1))}")
     p2 = puzzle2(persons)
     print(f"p2: {sum(map(int, p2))}")
+    p3 = puzzle3(persons)
+    print(f"p3: {sum(map(int, p3))}")
