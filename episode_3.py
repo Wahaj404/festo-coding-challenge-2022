@@ -1,5 +1,7 @@
 from collections import defaultdict
+from itertools import pairwise
 from queue import Queue
+from typing import Iterator
 
 
 class Person:
@@ -9,24 +11,23 @@ class Person:
         self.home_planet = lines[2].split(":")[1].strip()
         self.blood = [list(line.strip()[1:-1]) for line in lines[5:11]]
 
-    def _bendy_path(self, s: str, i: int, j: int) -> list[set[tuple[int, int]]]:
+    def _bendy_path(self, s: str, i: int, j: int) -> Iterator[set[tuple[int, int]]]:
         path = []
 
-        def helper(s: str, i: int, j: int):
-            if s == "":
+        def helper(i: int, j: int, k: int = 0):
+            if k == len(s):
                 yield set(path)
             elif (
                 0 <= i < len(self.blood)
                 and 0 <= j < len(self.blood[i])
-                and self.blood[i][j] == s[0]
+                and self.blood[i][j] == s[k]
             ):
-                s = s[1:]
                 path.append((i, j))
-                for x, y in ((i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)):
-                    yield from helper(s, x, y)
+                for i, j in ((i - 1, j), (i, j + 1), (i + 1, j), (i, j - 1)):
+                    yield from helper(i, j, k + 1)
                 path.pop()
 
-        return list(helper(s, i, j))
+        return helper(i, j)
 
     def has_pico(self, seqs: list[str]) -> bool:
         paths = {
@@ -39,18 +40,13 @@ class Person:
             for seq in seqs
         }
 
-        def non_intersecting(running_set: set[tuple[int, int]], i: int = 0) -> bool:
-            if i == len(seqs):
-                return True
-            for path in paths[seqs[i]]:
-                if len(running_set & path) == 0:
-                    running_set |= path
-                    if non_intersecting(running_set, i + 1):
-                        return True
-                    running_set -= path
-            return False
+        def no_overlap(chosen: set[tuple[int, int]], i: int = 0) -> bool:
+            return i == len(seqs) or any(
+                all(p not in chosen for p in path) and no_overlap(chosen | path, i + 1)
+                for path in paths[seqs[i]]
+            )
 
-        return non_intersecting(set())
+        return no_overlap(set())
 
 
 def read_persons(fname: str) -> list[Person]:
@@ -67,8 +63,8 @@ def read_galaxy(fname: str) -> dict[str, list[int]]:
         }
 
 
-def dist(c1: tuple[float, float, float], c2: tuple[float, float, float]) -> float:
-    return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
+def dist(x: tuple[float, float, float], y: tuple[float, float, float]) -> float:
+    return sum((a - b) ** 2 for a, b in zip(x, y)) ** 0.5
 
 
 def puzzle1(persons: list[Person]) -> set[str]:
@@ -79,17 +75,14 @@ def puzzle1(persons: list[Person]) -> set[str]:
 def puzzle2(persons: list[Person]) -> set[str]:
     signal_ranging = {"Venis": 2, "Cetung": 4, "Phoensa": 9}
     galaxy = read_galaxy("galaxy_map.txt")
-    graph = defaultdict(list)
-    for p1, c1 in galaxy.items():
-        for p2, c2 in galaxy.items():
-            if dist(c1, c2) < 50:
-                graph[p1].append(p2)
+    graph = {
+        u: [v for v, y in galaxy.items() if dist(x, y) < 50] for u, x in galaxy.items()
+    }
     running_set = set(galaxy.keys())
     for planet, delay in signal_ranging.items():
         q = Queue()
         q.put(planet)
-        distances = {}
-        distances[planet] = 0
+        distances = {planet: 0}
         while not q.empty():
             u = q.get()
             for v in graph[u]:
@@ -124,31 +117,25 @@ def puzzle3(persons: list[Person]) -> set[str]:
         for line in f:
             if line.startswith("Place:"):
                 place = line.split(":")[1].strip()
-            elif line.startswith("in"):
+            elif line.startswith("in:"):
                 for person in line.split(":")[1].strip().split(","):
                     visited[person.strip()].append([place, time])
-            elif line.startswith("out") and ":" in line:
+            elif line.startswith("out:"):
                 for person in line.split(":")[1].strip().split(","):
                     visited[person.strip()][-1].append(time)
             elif ":" in line:
                 time = absolute_time(*map(int, line.split(":")))
-    for log in visited.values():
-        log.sort(key=lambda x: x[1])
 
     window = (absolute_time(11, 0), absolute_time(13, 0))
     crime_time = 20
-
-    def could_rob(src, enter, dest, leave) -> bool:
-        arrival = max(enter + travel_times[src], window[0])
-        departure = arrival + crime_time
-        return departure <= window[1] and departure + travel_times[dest] <= leave
 
     names = {
         person
         for person, log in visited.items()
         if any(
-            could_rob(src, enter, dest, leave)
-            for (src, _, enter), (dest, leave, _) in zip(log, log[1:])
+            max(enter + travel_times[src], window[0]) + crime_time
+            <= min(window[1], leave - travel_times[dest])
+            for (src, _, enter), (dest, leave, _) in pairwise(sorted(log, key=lambda x: x[1]))
         )
     }
     return {p.id for p in persons if p.name in names}
