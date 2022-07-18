@@ -1,17 +1,23 @@
 from collections import defaultdict
-from itertools import pairwise
+from itertools import tee
 from queue import Queue
-from typing import Iterator
+from typing import Dict, Iterator, List, Set, Tuple
+
+
+def pairwise(iterable):
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 class Person:
-    def __init__(self, lines: list[str]):
+    def __init__(self, lines: List[str]):
         self.name = lines[0].split(":")[1].strip()
         self.id = lines[1].split(":")[1].strip()
         self.home_planet = lines[2].split(":")[1].strip()
-        self.blood = [list(line.strip()[1:-1]) for line in lines[5:11]]
+        self.blood = [line.strip()[1:-1] for line in lines[5:11]]
 
-    def _bendy_path(self, s: str, i: int, j: int) -> Iterator[set[tuple[int, int]]]:
+    def _bendy_path(self, s: str, i: int, j: int) -> Iterator[Set[Tuple[int, int]]]:
         path = []
 
         def helper(i: int, j: int, k: int = 0):
@@ -29,7 +35,7 @@ class Person:
 
         return helper(i, j)
 
-    def has_pico(self, seqs: list[str]) -> bool:
+    def has_pico(self, seqs: List[str]) -> bool:
         paths = {
             seq: [
                 path
@@ -40,7 +46,7 @@ class Person:
             for seq in seqs
         }
 
-        def no_overlap(chosen: set[tuple[int, int]], i: int = 0) -> bool:
+        def no_overlap(chosen: Set[Tuple[int, int]], i: int = 0) -> bool:
             return i == len(seqs) or any(
                 all(p not in chosen for p in path) and no_overlap(chosen | path, i + 1)
                 for path in paths[seqs[i]]
@@ -49,13 +55,13 @@ class Person:
         return no_overlap(set())
 
 
-def read_persons(fname: str) -> list[Person]:
+def read_persons(fname: str) -> List[Person]:
     with open(fname, "r") as f:
         lines = f.readlines()
     return [Person(lines[i : i + 14]) for i in range(0, len(lines), 14)]
 
 
-def read_galaxy(fname: str) -> dict[str, list[int]]:
+def read_galaxy(fname: str) -> Dict[str, List[int]]:
     with open(fname, "r") as f:
         return {
             line[0].strip(): list(int(x) for x in line[1].strip()[1:-1].split(","))
@@ -63,16 +69,16 @@ def read_galaxy(fname: str) -> dict[str, list[int]]:
         }
 
 
-def dist(x: tuple[float, float, float], y: tuple[float, float, float]) -> float:
+def dist(x: Tuple[float, float, float], y: Tuple[float, float, float]) -> float:
     return sum((a - b) ** 2 for a, b in zip(x, y)) ** 0.5
 
 
-def puzzle1(persons: list[Person]) -> set[str]:
+def puzzle1(persons: List[Person]) -> Set[str]:
     seqs = ["pic", "opi", "cop", "ico"]
     return {p.id for p in persons if p.has_pico(seqs)}
 
 
-def puzzle2(persons: list[Person]) -> set[str]:
+def puzzle2(persons: List[Person]) -> Set[str]:
     signal_ranging = {"Venis": 2, "Cetung": 4, "Phoensa": 9}
     galaxy = read_galaxy("galaxy_map.txt")
     graph = {
@@ -93,7 +99,7 @@ def puzzle2(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if p.home_planet in running_set}
 
 
-def puzzle3(persons: list[Person]) -> set[str]:
+def puzzle3(persons: List[Person]) -> Set[str]:
     travel_times = {
         "Bio-Lab": 21,
         "Factory": 18,
@@ -135,7 +141,9 @@ def puzzle3(persons: list[Person]) -> set[str]:
         if any(
             max(enter + travel_times[src], window[0]) + crime_time
             <= min(window[1], leave - travel_times[dest])
-            for (src, _, enter), (dest, leave, _) in pairwise(sorted(log, key=lambda x: x[1]))
+            for (src, _, enter), (dest, leave, _) in pairwise(
+                sorted(log, key=lambda x: x[1])
+            )
         )
     }
     return {p.id for p in persons if p.name in names}

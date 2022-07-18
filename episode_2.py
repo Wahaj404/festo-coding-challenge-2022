@@ -1,9 +1,10 @@
 from collections import defaultdict
 import numpy as np
+from typing import Dict, List, Set
 
 
 class Person:
-    def __init__(self, lines: list[str]):
+    def __init__(self, lines: List[str]):
         self.name = lines[0].split(":")[1].strip()
         self.id = lines[1].split(":")[1].strip()
         self.home_planet = lines[2].split(":")[1].strip()
@@ -28,13 +29,13 @@ class Person:
         )
 
 
-def read_persons(fname: str) -> list[Person]:
+def read_persons(fname: str) -> List[Person]:
     with open(fname, "r") as f:
         lines = f.readlines()
     return [Person(lines[i : i + 14]) for i in range(0, len(lines), 14)]
 
 
-def read_galaxy(fname: str) -> dict[str, list[int]]:
+def read_galaxy(fname: str) -> Dict[str, List[int]]:
     with open(fname, "r") as f:
         return {
             line[0].strip(): list(int(x) for x in line[1].strip()[1:-1].split(","))
@@ -42,7 +43,7 @@ def read_galaxy(fname: str) -> dict[str, list[int]]:
         }
 
 
-def read_trade_routes(fname: str) -> set[str]:
+def read_trade_routes(fname: str) -> Set[str]:
     with open(fname, "r") as f:
         return {
             tuple(planet.strip() for planet in line.split(":")[0].split("-"))
@@ -59,11 +60,11 @@ def lineseg_dist(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
     )
 
 
-def puzzle1(persons: list[Person]) -> set[str]:
+def puzzle1(persons: List[Person]) -> Set[str]:
     return {p.id for p in persons if p.has_pico()}
 
 
-def puzzle2(persons: list[Person]) -> set[str]:
+def puzzle2(persons: List[Person]) -> Set[str]:
     trade_routes = read_trade_routes("trade_routes.txt")
     galaxy = read_galaxy("galaxy_map.txt")
     close_planets = {
@@ -80,7 +81,7 @@ def puzzle2(persons: list[Person]) -> set[str]:
     return {p.id for p in persons if p.home_planet in close_planets}
 
 
-def puzzle3(persons: list[Person]) -> set[str]:
+def puzzle3(persons: List[Person]) -> Set[str]:
     visited = defaultdict(list)
     with open("security_log.txt", "r") as f:
         for line in f:
@@ -105,7 +106,7 @@ def puzzle3(persons: list[Person]) -> set[str]:
         for person, times in visited.items()
     }
 
-    def sums_to(nums: list[int], target: int, i: int = 0):
+    def sums_to(nums: List[int], target: int, i: int = 0):
         if i == len(nums) or target <= 0:
             return target == 0
         return sums_to(nums, target - nums[i], i + 1) or sums_to(nums, target, i + 1)

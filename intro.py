@@ -1,3 +1,6 @@
+from typing import List, Set
+
+
 class Person:
     def __init__(self, line: str):
         parts = line.split(",")
@@ -9,20 +12,20 @@ class Person:
         self.minute = int(login_time[1])
 
 
-def read_persons(fname: str) -> list[Person]:
+def read_persons(fname: str) -> List[Person]:
     with open(fname, "r") as f:
         return [Person(line) for line in f]
 
 
-def puzzle1(persons: list[Person]) -> set[str]:
+def puzzle1(persons: List[Person]) -> Set[str]:
     return {p.id for p in persons if "814" in p.id}
 
 
-def puzzle2(persons: list[Person]) -> set[str]:
+def puzzle2(persons: List[Person]) -> Set[str]:
     return {p.id for p in persons if p.access_key & 8 == 8}
 
 
-def puzzle3(persons: list[Person]) -> set[str]:
+def puzzle3(persons: List[Person]) -> Set[str]:
     return {p.id for p in persons if p.hour < 7 or (p.hour == 7 and p.minute < 14)}
 
 
