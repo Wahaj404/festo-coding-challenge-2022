@@ -58,8 +58,7 @@ def puzzle2():
         for j in range(1, cols):
             dp[0][j] = max(bunkers[0][j] + dp[1][j - 1], dp[0][j - 1])
             dp[1][j] = max(bunkers[1][j] + dp[0][j - 1], dp[1][j - 1])
-        res = max(dp[0][-1], dp[1][-1])
-        if mx < res:
+        if mx < (res := max(dp[0][-1], dp[1][-1])):
             mx = res
             planet = lines[i].strip()
     return f"{planet}{mx}"
@@ -102,8 +101,7 @@ class Graph:
         while not pq.empty():
             d, u = pq.get()
             for v, w in self._adj[u].items():
-                alt = d + w
-                if v not in dist or dist[v] > alt:
+                if v not in dist or dist[v] > (alt := d + w):
                     dist[v] = alt
                     pred[v] = u
                     pq.put((alt, v))
@@ -125,8 +123,7 @@ def puzzle3():
             graph.add_edge(u, v, int(n), int(i))
 
     def dfs(ans_mn: List):
-        path = graph.dijikstra("A", "Z")
-        for u, v in path:
+        for u, v in (path := graph.dijikstra("A", "Z")):
             graph.remove_edge(u, v)
             dfs(ans_mn)
             graph.restore_edge()
@@ -136,8 +133,7 @@ def puzzle3():
             ans_mn[1] = graph.cost
             ans_mn[0] = graph.answer()
 
-    ans_mn = [[], float("inf")]
-    dfs(ans_mn)
+    dfs(ans_mn := [[], float("inf")])
     return "-".join(map(str, sorted(ans_mn[0])))
 
 
