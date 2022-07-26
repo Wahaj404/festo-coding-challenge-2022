@@ -1,5 +1,14 @@
 from collections import defaultdict
-from typing import Dict, List
+from itertools import tee
+from queue import PriorityQueue
+from typing import Dict, List, Tuple
+import networkx as nx
+
+
+def pairwise(iterable):
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 def isCyclic(graph: Dict[str, List[str]]):
@@ -38,7 +47,6 @@ def puzzle2():
         lines = f.readlines()
     mx = float("-inf")
     for i in range(0, len(lines), 4):
-        pname = lines[i]
         bunkers = [
             [int(bunker.strip()) for bunker in lines[i + j].strip().split(",")]
             for j in (1, 2)
@@ -47,16 +55,93 @@ def puzzle2():
         dp = [[0] * cols for _ in (0, 1)]
         dp[0][0] = bunkers[0][0]
         dp[1][0] = bunkers[1][0]
-        for i in range(1, cols):
-            dp[0][i] = max(bunkers[0][i] + dp[1][i - 1], dp[0][i - 1])
-            dp[1][i] = max(bunkers[1][i] + dp[0][i - 1], dp[1][i - 1])
+        for j in range(1, cols):
+            dp[0][j] = max(bunkers[0][j] + dp[1][j - 1], dp[0][j - 1])
+            dp[1][j] = max(bunkers[1][j] + dp[0][j - 1], dp[1][j - 1])
         res = max(dp[0][-1], dp[1][-1])
         if mx < res:
             mx = res
-            planet = pname.strip()
+            planet = lines[i].strip()
     return f"{planet}{mx}"
+
+
+class Graph:
+    def __init__(self):
+        self._adj: Dict[str, Dict[str, int]] = defaultdict(dict)
+        self._indices: Dict[Tuple[int, int], int] = {}
+        self._removed = []
+        self.cost = 0
+
+    def add_edge(self, u: str, v: str, w: int, i: int):
+        self._adj[u][v] = self._adj[v][u] = w
+        self._indices[(u, v)] = self._indices[(v, u)] = i
+
+    def remove_edge(self, u: str, v: str):
+        self._removed.append((u, v, self._adj[u][v]))
+        self.cost += self._adj[u][v]
+        self._adj[u].pop(v)
+        self._adj[v].pop(u)
+        return self.cost
+
+    def restore_edge(self):
+        u, v, w = self._removed.pop()
+        self._adj[u][v] = self._adj[v][u] = w
+        self.cost -= w
+        return self.cost
+
+    def answer(self):
+        return [self._indices[(u, v)] for u, v, _ in self._removed]
+
+    def dijikstra(self, src: str, tgt: str):
+        dist = {src: 0}
+        pred = {src: None}
+
+        pq = PriorityQueue()
+        pq.put((0, src))
+
+        while not pq.empty():
+            d, u = pq.get()
+            for v, w in self._adj[u].items():
+                alt = d + w
+                if v not in dist or dist[v] > alt:
+                    dist[v] = alt
+                    pred[v] = u
+                    pq.put((alt, v))
+
+        path = []
+        if tgt in pred:
+            while pred[tgt] is not None:
+                path.append((pred[tgt], tgt))
+                tgt = pred[tgt]
+        return path
+
+
+def puzzle3():
+    graph = Graph()
+    with open("machine_room.txt", "r") as f:
+        for line in f:
+            i, link, n = map(str.strip, line.split(":"))
+            u, v = map(str.strip, link.split("-"))
+            graph.add_edge(u, v, int(n), int(i))
+
+    def dfs(ans_mn: List):
+        path = graph.dijikstra("A", "Z")
+        for u, v in path:
+            graph.remove_edge(u, v)
+            dfs(ans_mn)
+            graph.restore_edge()
+            if ans_mn[1] <= graph.cost:
+                break
+        if len(path) == 0 and ans_mn[1] > graph.cost:
+            ans_mn[1] = graph.cost
+            ans_mn[0] = graph.answer()
+
+    ans_mn = [[], float("inf")]
+    dfs(ans_mn)
+    return "-".join(map(str, sorted(ans_mn[0])))
 
 
 if __name__ == "__main__":
     print(f"p1: {puzzle1()}")
     print(f"p2: {puzzle2()}")
+    print(f"p3: {puzzle3()}")
