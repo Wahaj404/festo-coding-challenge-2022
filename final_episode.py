@@ -2,7 +2,6 @@ from collections import defaultdict
 from itertools import tee
 from queue import PriorityQueue
 from typing import Dict, List, Tuple
-import networkx as nx
 
 
 def pairwise(iterable):
